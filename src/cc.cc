@@ -13,7 +13,9 @@
 #include "command_line.h"
 #include "graph.h"
 #include "pvector.h"
+#include "config.h"
 
+//#define static "static"
 
 /*
 GAP Benchmark Suite
@@ -57,7 +59,7 @@ void Link(NodeID u, NodeID v, pvector<NodeID>& comp) {
 
 // Reduce depth of tree for each component to 1 by crawling up parents
 void Compress(const Graph &g, pvector<NodeID>& comp) {
-  #pragma omp parallel for schedule(dynamic, 16384)
+  #pragma omp parallel for schedule(static, BATCH)
   for (NodeID n = 0; n < g.num_nodes(); n++) {
     while (comp[n] != comp[comp[n]]) {
       comp[n] = comp[comp[n]];
@@ -104,13 +106,18 @@ pvector<NodeID> Afforest(const Graph &g, bool logging_enabled = false,
   // Process a sparse sampled subgraph first for approximating components.
   // Sample by processing a fixed number of neighbors for each node (see paper)
   for (int r = 0; r < neighbor_rounds; ++r) {
-  #pragma omp parallel for schedule(dynamic,16384)
+  #pragma omp parallel for schedule(static,BATCH)
     for (NodeID u = 0; u < g.num_nodes(); u++) {
+      //std::cout << "Node " << u << "'s neighbors" << std::endl;
+      //std::cout << "Node " << u << "'s neighbors: ";
+      //std::cout << u << ",";
       for (NodeID v : g.out_neigh(u, r)) {
+        //std::cout << v << ",";
         // Link at most one time if neighbor available at offset r
         Link(u, v, comp);
         break;
       }
+      //std::cout << std::endl;
     }
     Compress(g, comp);
   }
@@ -118,27 +125,38 @@ pvector<NodeID> Afforest(const Graph &g, bool logging_enabled = false,
   // Sample 'comp' to find the most frequent element -- due to prior
   // compression, this value represents the largest intermediate component
   NodeID c = SampleFrequentElement(comp, logging_enabled);
+  //std::cout << "Sampled node: " << c << std::endl;
 
   // Final 'link' phase over remaining edges (excluding the largest component)
   if (!g.directed()) {
-    #pragma omp parallel for schedule(dynamic, 16384)
+    #pragma omp parallel for schedule(static, BATCH)
     for (NodeID u = 0; u < g.num_nodes(); u++) {
+      //std::cout << "Node " << u << "'s neighbors" << std::endl;
+      //std::cout << "Node " << u << "'s neighbors: ";
+      //std::cout << u << ",";
       // Skip processing nodes in the largest component
       if (comp[u] == c)
         continue;
       // Skip over part of neighborhood (determined by neighbor_rounds)
       for (NodeID v : g.out_neigh(u, neighbor_rounds)) {
+        //std::cout << v << ",";
         Link(u, v, comp);
       }
+      //std::cout << std::endl;
     }
   } else {
-    #pragma omp parallel for schedule(dynamic, 16384)
+    #pragma omp parallel for schedule(static, BATCH)
     for (NodeID u = 0; u < g.num_nodes(); u++) {
+      //std::cout << "Node " << u << "'s neighbors" << std::endl;
+      //std::cout << "Node " << u << "'s neighbors: ";
+      //std::cout << u << ",";
       if (comp[u] == c)
         continue;
       for (NodeID v : g.out_neigh(u, neighbor_rounds)) {
+        //std::cout << v << ",";
         Link(u, v, comp);
       }
+      //std::cout << std::endl;
       // To support directed graphs, process reverse graph completely
       for (NodeID v : g.in_neigh(u)) {
         Link(u, v, comp);

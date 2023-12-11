@@ -10,6 +10,7 @@
 #include "command_line.h"
 #include "graph.h"
 #include "pvector.h"
+#include "config.h"
 
 /*
 GAP Benchmark Suite
@@ -42,7 +43,7 @@ pvector<ScoreT> PageRankPullGS(const Graph &g, int max_iters, double epsilon=0,
     outgoing_contrib[n] = init_score / g.out_degree(n);
   for (int iter=0; iter < max_iters; iter++) {
     double error = 0;
-    #pragma omp parallel for reduction(+ : error) schedule(dynamic, 16384)
+    #pragma omp parallel for reduction(+ : error) schedule(dynamic, BATCH)
     for (NodeID u=0; u < g.num_nodes(); u++) {
       ScoreT incoming_total = 0;
       for (NodeID v : g.in_neigh(u))
