@@ -14,3 +14,4 @@ benchmark/out/*.out
 benchmark/graphs
 
 profile
+log
