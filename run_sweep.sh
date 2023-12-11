@@ -13,7 +13,7 @@ for bench in kron road twitter urand web; do
   log=$base/${bench}_${opt}.out
   mkdir -p $base
   echo "$bench,$i" >> $log
-  ./cc -f benchmark/graphs/$bench.sg -n64 >> log/${bench}_static.out
+  ./cc -f benchmark/graphs/$bench.sg -n64 >> $log
   #./pr -f benchmark/graphs/$bench.sg -n64 >> $log
   echo "" >> $log
 done
